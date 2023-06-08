@@ -1,46 +1,39 @@
-// First char is opponent, second is player
+// First char is opponent's play, second is desired outcome
 //
-// Rock: A, X, scores 1
-// Paper: B, Y, scores 2
-// Scissors: C, Z, scores 3
+// Rock: A scores 1
+// Paper: B, scores 2
+// Scissors: C, scores 3
 //
-// Lose: 0 points
-// Draw: 3 points
-// Win: 6 points
+// Lose: 0 points, X
+// Draw: 3 points, Y
+// Win: 6 points, Z
 
 fn main() {
-    let text = std::fs::read_to_string("input").unwrap();
-
-    let score: i32 = text
+    let score: i32 = std::fs::read_to_string("input")
+        .unwrap()
         .trim()
         .lines()
-        .map(|line| Round::build(line).score())
+        .map(|line| {
+            let mut codes = line.split(" ");
+            let (opponent_move, outcome) = (
+                Shape::parse(codes.next().unwrap()),
+                Outcome::parse(codes.next().unwrap()),
+            );
+
+            let player_move = match outcome {
+                Outcome::Lose => opponent_move.beats(),
+                Outcome::Draw => opponent_move,
+                // Kinda lazy but it works
+                Outcome::Win => opponent_move.beats().beats(),
+            };
+
+            outcome as i32 + player_move as i32
+        })
         .sum();
 
     println!("Score: {}", score);
 }
 
-struct Round {
-    player: Shape,
-    opponent: Shape,
-}
-
-impl Round {
-    fn score(&self) -> i32 {
-        Outcome::build(&self.opponent, &self.player) as i32 + self.player as i32
-    }
-
-    fn build(line: &str) -> Self {
-        let chars = line.split(" ").collect::<Vec<&str>>();
-
-        Round {
-            opponent: Shape::parse(chars[0]),
-            player: Shape::parse(chars[1]),
-        }
-    }
-}
-
-#[derive(PartialEq, Copy, Clone)]
 enum Shape {
     Rock = 1,
     Paper = 2,
@@ -50,10 +43,10 @@ enum Shape {
 impl Shape {
     fn parse(code: &str) -> Self {
         match code {
-            "A" | "X" => Shape::Rock,
-            "B" | "Y" => Shape::Paper,
-            "C" | "Z" => Shape::Scissors,
-            _ => panic!("Invalid shape"),
+            "A" => Shape::Rock,
+            "B" => Shape::Paper,
+            "C" => Shape::Scissors,
+            _ => panic!("Invalid shape code"),
         }
     }
 
@@ -73,13 +66,12 @@ enum Outcome {
 }
 
 impl Outcome {
-    fn build(opponent: &Shape, player: &Shape) -> Self {
-        if player == opponent {
-            Outcome::Draw
-        } else if player.beats() == *opponent {
-            Outcome::Win
-        } else {
-            Outcome::Lose
+    fn parse(code: &str) -> Self {
+        match code {
+            "X" => Outcome::Lose,
+            "Y" => Outcome::Draw,
+            "Z" => Outcome::Win,
+            _ => panic!("Invalid outcome code"),
         }
     }
 }
