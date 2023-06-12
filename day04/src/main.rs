@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 // Example problem has 2 overlaps
 const _EXAMPLE: &str = "
 2-4,6-8
@@ -8,7 +10,7 @@ const _EXAMPLE: &str = "
 2-6,4-8
 ";
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 struct Assignment {
     start: usize,
     end: usize,
@@ -24,6 +26,23 @@ impl Assignment {
         }
 
         Self { start, end }
+    }
+
+    // Returns true if either range fully contains the other
+    fn contains(&self, other: &Self) -> bool {
+        self == other || self.start.cmp(&other.start) != self.end.cmp(&other.end)
+    }
+
+    fn overlaps(&self, other: &Self) -> bool {
+        let rng: RangeInclusive<usize> = self.clone().into();
+
+        self.contains(other) || rng.contains(&other.start) || rng.contains(&other.end)
+    }
+}
+
+impl Into<RangeInclusive<usize>> for Assignment {
+    fn into(self) -> RangeInclusive<usize> {
+        self.start..=self.end
     }
 }
 
@@ -45,10 +64,7 @@ fn main() {
 
             ranges
         })
-        // Return only ranges which overlap.
-        // This means that the ranges are either equal, or the start & end of one
-        // are not both greater than or less than the start & end of the other.
-        .filter(|&(ref a, ref b)| a == b || a.start.cmp(&b.start) != a.end.cmp(&b.end))
+        .filter(|&(ref a, ref b)| a.overlaps(b))
         .count();
 
     println!("{}", containers);
