@@ -56,18 +56,30 @@ impl Instruction {
         }
     }
 
-    fn execute(self, stacks: &mut Vec<Vec<char>>) {
+    // Part 1 solution
+    fn execute_9000(self, stacks: &mut Vec<Vec<char>>) {
         for _ in 0..self.count {
             let c = stacks[self.source - 1].pop().unwrap();
 
             stacks[self.dest - 1].push(c);
         }
     }
+
+    // Part 2 solution
+    fn execute_9001(self, stacks: &mut Vec<Vec<char>>) {
+        let mut temp: Vec<char> = Vec::new();
+
+        for _ in 0..self.count {
+            temp.insert(0, stacks[self.source - 1].pop().unwrap());
+        }
+
+        stacks[self.dest - 1].extend(temp);
+    }
 }
 
 fn main() {
     // Split on blank line, starting state is first set of lines, instructions are second
-    // let mut input = _SAMPLE.splitn(2, "\n\n");
+    // let input = _SAMPLE;
     let input = fs::read_to_string("input").unwrap();
     let mut input = input.splitn(2, "\n\n");
 
@@ -77,6 +89,7 @@ fn main() {
     let rows = input.next().unwrap();
     let rows = rows
         .lines()
+        .rev()
         .map(|line| line.chars().skip(1).step_by(4).collect::<Vec<_>>())
         .collect::<Vec<_>>();
 
@@ -84,7 +97,7 @@ fn main() {
     let mut stacks: Vec<_> = vec![Vec::new(); rows.first().unwrap().len()];
 
     // Transpose rows to stacks, bottom to top. First row is indexes, so skip.
-    for row in rows.iter().rev().skip(1) {
+    for row in rows.iter().skip(1) {
         for (i, char) in row.iter().enumerate() {
             if char.is_whitespace() {
                 continue;
@@ -98,7 +111,7 @@ fn main() {
     instructions
         .lines()
         .map(Instruction::parse)
-        .for_each(|i| i.execute(&mut stacks));
+        .for_each(|i| i.execute_9001(&mut stacks));
 
     // See what's on top
     let tops = stacks
