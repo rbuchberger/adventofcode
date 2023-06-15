@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+const FILESYSTEM: usize = 70_000_000;
+const REQUIRED: usize = 30_000_000;
+
 #[derive(Clone, Debug)]
 enum Node {
     Directory(HashMap<String, Node>),
@@ -84,12 +87,19 @@ fn main() {
         };
     });
 
-    let result = tree.flat_children().unwrap();
-    let result: usize = result
-        .iter()
-        .filter(|(_, node)| matches!(node, Node::Directory(_)) && node.size() <= 100_000)
-        .map(|(_, node)| node.size())
-        .sum();
+    let current_free = FILESYSTEM - tree.size();
+    let additional_required = REQUIRED - current_free;
 
-    println!("{:?}", result);
+    let result = tree.flat_children().unwrap();
+    let mut result = result
+        .iter()
+        .filter(|(_, node)| {
+            matches!(node, Node::Directory(_)) && node.size() >= additional_required
+        })
+        .map(|(_, node)| node.size())
+        .collect::<Vec<_>>();
+
+    result.sort_unstable();
+
+    println!("{:?}", result.first().unwrap());
 }
