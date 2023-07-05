@@ -108,15 +108,21 @@ impl Map {
         }
     }
 
-    fn start(&self) -> Coord {
-        let y = self
-            .0
+    fn initial_queue(&self) -> VecDeque<Vec<Coord>> {
+        self.0
             .iter()
-            .position(|line| line.contains(&Point::Start))
-            .unwrap();
-        let x = self.0[y].iter().position(|p| *p == Point::Start).unwrap();
-
-        Coord { x, y }
+            .enumerate()
+            .flat_map(|(y, row)| {
+                row.iter()
+                    .enumerate()
+                    .filter_map(|(x, p)| match p {
+                        Point::Start | Point::P(0) => Some(Coord { x, y }),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .map(|c| vec![c])
+            .collect::<VecDeque<_>>()
     }
 }
 
@@ -126,7 +132,7 @@ fn main() {
     let map_bound = map.max();
 
     let mut visited: HashSet<Coord> = HashSet::new();
-    let mut queue = VecDeque::from([vec![map.start()]]);
+    let mut queue = map.initial_queue();
 
     while queue.len() > 0 {
         let current_path = queue.pop_front().unwrap();
