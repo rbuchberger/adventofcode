@@ -34,7 +34,7 @@ impl Direction {
 enum Fall {
     None,
     Limited((isize, isize)),
-    Unlimited,
+    Unlimited(isize),
 }
 
 impl Fall {
@@ -42,7 +42,7 @@ impl Fall {
         let col = cave.get(&point.0);
 
         if col.is_none() {
-            return Self::Unlimited;
+            return Self::Unlimited(point.0);
         }
 
         match col.unwrap().range((&point.1 + 1)..).next() {
@@ -54,7 +54,7 @@ impl Fall {
                 }
             }
 
-            None => Self::Unlimited,
+            None => Self::Unlimited(point.0),
         }
     }
 }
@@ -96,8 +96,15 @@ fn main() {
         }
     }
 
+    let bottom = cave
+        .iter()
+        .map(|(_, col)| col.last().unwrap_or(&0))
+        .max()
+        .unwrap()
+        + 1;
+
     // Drop sand
-    'all_grains: for i in 0.. {
+    'all_grains: for i in 1.. {
         let mut grain = (500, 0);
 
         'this_grain: loop {
@@ -108,12 +115,18 @@ fn main() {
             {
                 Some(Fall::Limited(new_point)) => grain = new_point,
 
-                Some(Fall::Unlimited) => {
-                    println!("Result: {}", i);
-                    break 'all_grains;
+                Some(Fall::Unlimited(col)) => {
+                    cave.entry(col).or_insert(BTreeSet::new()).insert(bottom);
+
+                    break 'this_grain;
                 }
 
                 None => {
+                    if grain.1 == 0 {
+                        println!("Result: {}", i);
+                        break 'all_grains;
+                    }
+
                     cave.entry(grain.0).and_modify(|c| {
                         c.insert(grain.1);
                     });
